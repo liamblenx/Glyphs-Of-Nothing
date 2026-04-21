@@ -1,0 +1,32 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'com.artemis.glyphtoy'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId "com.artemis.glyphtoy"
+        minSdk 33
+        targetSdk 34
+        versionCode 1
+        versionName "1.0"
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+dependencies {
+    // GlyphMatrix SDK — copy glyph-matrix-sdk-2.0.aar into app/libs/
+    implementation files('libs/glyph-matrix-sdk-2.0.aar')
+}

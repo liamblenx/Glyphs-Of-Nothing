@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Artemis Tracker</string>
+    <string name="toy_name">Artemis Mission</string>
+    <string name="toy_summary">Track Artemis missions from Earth to the Moon on your Glyph Matrix</string>
+</resources>

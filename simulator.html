@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Artemis Glyph Matrix Simulator</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #0a0a0a;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    color: #ccc;
+  }
+  h1 {
+    font-size: 14px;
+    font-weight: 400;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: #555;
+    margin-bottom: 24px;
+  }
+  canvas {
+    border: 1px solid #222;
+    border-radius: 8px;
+    image-rendering: pixelated;
+  }
+  .controls {
+    margin-top: 20px;
+    display: flex;
+    gap: 16px;
+    align-items: center;
+  }
+  button {
+    background: #1a1a1a;
+    color: #aaa;
+    border: 1px solid #333;
+    padding: 8px 20px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    letter-spacing: 1px;
+  }
+  button:hover { background: #252525; color: #fff; }
+  .info {
+    font-size: 12px;
+    color: #444;
+    margin-top: 12px;
+  }
+  .speed-label {
+    font-size: 12px;
+    color: #555;
+  }
+</style>
+</head>
+<body>
+
+<h1>Artemis &middot; Glyph Matrix 25&times;25</h1>
+<canvas id="matrix" width="500" height="500"></canvas>
+
+<div class="controls">
+  <button id="btnPause">Pause</button>
+  <span class="speed-label">Speed:</span>
+  <button id="btnSlower">-</button>
+  <span id="speedVal" class="speed-label">1x</span>
+  <button id="btnFaster">+</button>
+</div>
+<div class="info">Long-press simulation: click Pause &middot; LED brightness shown as white intensity</div>
+
+<script>
+const SIZE = 25;
+const CELL = 20; // px per LED cell
+
+// ── Earth (top-left, center ~5,5, radius ~3.5) ────────────────────
+// Varying brightness for a realistic look:
+//   - Brighter patches = land masses
+//   - Medium = ocean
+//   - Dim edges = limb darkening (spherical effect)
+//
+//   Visual map (brightness):
+//              2    3    4    5    6    7    8
+//         2        110  140  150  120
+//         3   80   130  180  155  190  140   85
+//         4  100   155  225  175  210  230  110
+//         5  115   180  245  200  165  195  120
+//         6  100   145  195  220  240  200  105
+//         7   75   120  175  185  150  125   80
+//         8        90   115  125  105
+//
+// const EARTH = [
+//   // Row 2 (top edge — polar ice hint)
+//   [3,2,180], [4,2,180], [5,2,255], [6,2,255],
+//   // Row 3 ( polar ice hint)
+//   [2,3,180],  [3,3,180], [4,3,180], [5,3,180], [6,3,255], [7,3,255],
+//   // Row 4 (land mass upper)
+//   [2,4,180], [3,4,180], [4,4,180], [5,4,180], [6,4,180], [7,4,255],
+//   // Row 6 (land mass lower)
+//   [2,5,255], [3,5,180], [4,5,180], [5,5,180], [6,5,180], [7,5,180],
+//   // Row 7
+//   [2,6,255], [3,6,255], [4,6,200], [5,6,200], [6,6,200], [7,6,200],
+//   // Row 8 (bottom edge)
+//   [3,7,255],  [4,7,255], [5,7,180], [6,7,180],
+// ];
+
+const EARTH = [
+  // Row 1 (top edge — polar ice hint)
+  [4,3,180], [5,3,180], [6,3,255], [7,3,255],
+  // Row 2 ( polar ice hint)
+  [3,4,180],  [4,4,180], [5,4,180], [6,4,180], [7,4,255], [8,4,255],
+  // Row 3 (land mass upper)
+  [3,5,180], [4,5,180], [5,5,180], [6,5,180], [7,5,180], [8,5,255],
+  // Row 4 (land mass lower)
+  [3,6,255], [4,6,180], [5,6,180], [6,6,180], [7,6,180], [8,6,180],
+  // Row 5
+  [3,7,255], [4,7,255], [5,7,200], [6,7,200], [7,7,200], [8,7,200],
+  // Row 6 (bottom edge)
+  [4,8,255],  [5,8,255], [6,8,180], [7,8,180],
+];
+
+
+
+// ── Moon (bottom-right, center ~20,20, radius ~2.5) ───────────────
+// Darker overall with crater texture:
+//   - Brightest ~110 (highlands)
+//   - Darkest ~35 (maria / craters)
+//
+//   Visual map:
+//             18   19   20   21   22
+//       18         50   60   55
+//       19    40   75  100   80   55
+//       20    55   95  110   90   65
+//       21    45   85   95  105   50
+//       22         45   55   50
+//
+const MOON = [
+  // Row 18 (top edge)
+  [19,18,50], [20,18,60], [21,18,55],
+  // Row 19
+  [18,19,40], [19,19,75], [20,19,100], [21,19,80], [22,19,55],
+  // Row 20 (center)
+  [18,20,55], [19,20,95], [20,20,110], [21,20,90], [22,20,65],
+  // Row 21
+  [18,21,45], [19,21,85], [20,21,95], [21,21,105], [22,21,50],
+  // Row 22 (bottom edge)
+  [19,22,45], [20,22,55], [21,22,50],
+];
+
+// ── Trajectory (smooth, diagonal path from Earth to Moon and back) ─
+// Outbound: curves RIGHT of the Earth→Moon diagonal (upper side)
+// Flyby:    tight loop around far side of Moon
+// Return:   curves LEFT of diagonal (lower side) back to Earth
+const TRAJECTORY = [
+  // ── Earth Slingshot Rot 1──
+  [4, 1],
+  [2, 2],
+  [1, 4],
+  [1, 6],
+  [2, 8],
+  [4, 10],
+  [7, 10],
+  [9, 8],
+  [10, 6],
+  [10, 4],
+  [9, 2],
+  [7, 1],
+  // ── Earth Slingshot Rot 1──
+  [4, 1],
+  [2, 2],
+  [1, 4],
+  [1, 6],
+  [2, 8],
+  [4, 10],
+  // ── Depart Earth Slingshot ──
+  [9, 12],
+  [14, 14],
+  [19, 16],
+  // ── Arrive Moon──
+  [23, 18],
+  [24, 20],
+  [24, 22],
+  [22, 24],
+  [20, 24],
+  [18, 23],
+  [16, 19],
+  // ── Depart Moon──
+  [13, 10],
+  [12, 6],
+  // ── Arrive back at Earth ──
+];
+
+// ── Brightness ─────────────────────────────────────────────────────
+
+const B_PATH = 50;
+const B_CRAFT_MAX = 255;
+const B_CRAFT_MIN = 140;
+
+// ── State ──────────────────────────────────────────────────────────
+
+let craftIndex = 0;
+let paused = false;
+let speed = 1;
+let lastStep = performance.now();
+const STEP_MS = 1500;
+
+// ── Rendering ──────────────────────────────────────────────────────
+
+const canvas = document.getElementById('matrix');
+const ctx = canvas.getContext('2d');
+
+function renderFrame(timestamp) {
+  ctx.fillStyle = '#050505';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // Subtle grid
+  ctx.strokeStyle = '#0e0e0e';
+  ctx.lineWidth = 0.5;
+  for (let i = 0; i <= SIZE; i++) {
+    ctx.beginPath(); ctx.moveTo(i * CELL, 0); ctx.lineTo(i * CELL, SIZE * CELL); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0, i * CELL); ctx.lineTo(SIZE * CELL, i * CELL); ctx.stroke();
+  }
+
+  // Helper: draw an LED dot with per-pixel brightness
+  function led(x, y, brightness) {
+    const r = CELL / 2 - 2;
+    const cx = x * CELL + CELL / 2;
+    const cy = y * CELL + CELL / 2;
+    const alpha = brightness / 255;
+
+    // Glow halo
+    const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, r + 3);
+    grad.addColorStop(0, `rgba(255,255,255,${alpha})`);
+    grad.addColorStop(0.5, `rgba(255,255,255,${alpha * 0.3})`);
+    grad.addColorStop(1, `rgba(255,255,255,0)`);
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(cx, cy, r + 3, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Core
+    ctx.fillStyle = `rgba(255,255,255,${alpha})`;
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Earth (each pixel has its own brightness)
+  for (const [x, y, b] of EARTH) led(x, y, b);
+
+  // Moon (darker, per-pixel brightness)
+  for (const [x, y, b] of MOON) led(x, y, b);
+
+  // Trajectory + pulsing spacecraft
+  const pulse = 0.5 + 0.5 * Math.sin((timestamp % 1500) / 1500 * Math.PI * 2);
+
+  for (let i = 0; i < TRAJECTORY.length; i++) {
+    const [x, y] = TRAJECTORY[i];
+    if (i === craftIndex) {
+      const b = Math.round(B_CRAFT_MIN + pulse * (B_CRAFT_MAX - B_CRAFT_MIN));
+      led(x, y, b);
+    } else {
+      led(x, y, B_PATH);
+    }
+  }
+
+  // Simulator-only labels
+  ctx.font = '9px monospace';
+  ctx.fillStyle = '#282828';
+  ctx.fillText('EARTH', 1.5 * CELL, 10.5 * CELL);
+  ctx.fillText('MOON', 19 * CELL, 24.2 * CELL);
+}
+
+// ── Animation loop ─────────────────────────────────────────────────
+
+function loop(timestamp) {
+  if (!paused) {
+    if (timestamp - lastStep >= STEP_MS / speed) {
+      craftIndex = (craftIndex + 1) % TRAJECTORY.length;
+      lastStep = timestamp;
+    }
+  }
+  renderFrame(timestamp);
+  requestAnimationFrame(loop);
+}
+
+requestAnimationFrame(loop);
+
+// ── Controls ───────────────────────────────────────────────────────
+
+document.getElementById('btnPause').addEventListener('click', () => {
+  paused = !paused;
+  document.getElementById('btnPause').textContent = paused ? 'Resume' : 'Pause';
+});
+
+document.getElementById('btnSlower').addEventListener('click', () => {
+  speed = Math.max(0.25, speed / 2);
+  document.getElementById('speedVal').textContent = speed + 'x';
+});
+
+document.getElementById('btnFaster').addEventListener('click', () => {
+  speed = Math.min(8, speed * 2);
+  document.getElementById('speedVal').textContent = speed + 'x';
+});
+</script>
+</body>
+</html>

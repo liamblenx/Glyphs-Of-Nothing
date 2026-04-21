@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.artemis.glyphtoy">
+
+    <uses-permission android:name="com.nothing.ketchum.permission.ENABLE" />
+
+    <application
+        android:label="@string/app_name"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.Material3.DayNight">
+
+        <!-- Artemis trajectory Glyph Toy -->
+        <service
+            android:name=".ArtemisGlyphToyService"
+            android:exported="true">
+
+            <intent-filter>
+                <action android:name="com.nothing.glyph.TOY" />
+            </intent-filter>
+
+            <!-- Required: toy name shown in the system Glyph Toys manager -->
+            <meta-data
+                android:name="toy_name"
+                android:resource="@string/toy_name" />
+
+            <!-- Required: 1:1 preview image (ideally 200x200 px) -->
+            <meta-data
+                android:name="toy_preview_image"
+                android:resource="@drawable/preview_artemis" />
+
+            <!-- Optional: short description -->
+            <meta-data
+                android:name="toy_summary"
+                android:resource="@string/toy_summary" />
+
+            <!-- Enable long-press to pause/resume -->
+            <meta-data
+                android:name="toy_long_press"
+                android:value="1" />
+
+            <!-- Enable Always-On Display support -->
+            <meta-data
+                android:name="toy_aod"
+                android:value="1" />
+        </service>
+
+    </application>
+</manifest>
