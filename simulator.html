@@ -68,7 +68,7 @@
   <span id="speedVal" class="speed-label">1x</span>
   <button id="btnFaster">+</button>
 </div>
-<div class="info">Long-press simulation: click Pause &middot; LED brightness shown as white intensity</div>
+<div class="info">Mirrors ArtemisRenderer.java &middot; 2s step, 120ms frames, 1.5s pulse &middot; grey corners are physically dark on Phone (3)</div>
 
 <script>
 const SIZE = 25;
@@ -105,19 +105,23 @@ const CELL = 20; // px per LED cell
 //   [3,7,255],  [4,7,255], [5,7,180], [6,7,180],
 // ];
 
+// The Phone (3) Glyph Matrix masks the 25x25 grid to an inscribed disc
+// (cells whose centre is within ~12.5 of (12,12)). Art outside the disc is
+// invisible on hardware — shaded grey below to show the cut-off.
+
 const EARTH = [
-  // Row 1 (top edge — polar ice hint)
-  [4,3,180], [5,3,180], [6,3,255], [7,3,255],
-  // Row 2 ( polar ice hint)
-  [3,4,180],  [4,4,180], [5,4,180], [6,4,180], [7,4,255], [8,4,255],
-  // Row 3 (land mass upper)
-  [3,5,180], [4,5,180], [5,5,180], [6,5,180], [7,5,180], [8,5,255],
-  // Row 4 (land mass lower)
-  [3,6,255], [4,6,180], [5,6,180], [6,6,180], [7,6,180], [8,6,180],
-  // Row 5
-  [3,7,255], [4,7,255], [5,7,200], [6,7,200], [7,7,200], [8,7,200],
-  // Row 6 (bottom edge)
-  [4,8,255],  [5,8,255], [6,8,180], [7,8,180],
+  // Row 4 (top edge — polar ice hint)
+  [5,4,180], [6,4,180], [7,4,255], [8,4,255],
+  // Row 5 (polar ice hint)
+  [4,5,180], [5,5,180], [6,5,180], [7,5,180], [8,5,255], [9,5,255],
+  // Row 6 (land mass upper)
+  [4,6,180], [5,6,180], [6,6,180], [7,6,180], [8,6,180], [9,6,255],
+  // Row 7 (land mass lower)
+  [4,7,255], [5,7,180], [6,7,180], [7,7,180], [8,7,180], [9,7,180],
+  // Row 8
+  [4,8,255], [5,8,255], [6,8,200], [7,8,200], [8,8,200], [9,8,200],
+  // Row 9 (bottom edge)
+  [5,9,255], [6,9,255], [7,9,180], [8,9,180],
 ];
 
 
@@ -136,16 +140,16 @@ const EARTH = [
 //       22         45   55   50
 //
 const MOON = [
-  // Row 18 (top edge)
-  [19,18,50], [20,18,60], [21,18,55],
+  // Row 16 (top edge)
+  [17,16,50], [18,16,60], [19,16,55],
+  // Row 17
+  [16,17,40], [17,17,75], [18,17,100], [19,17,80], [20,17,55],
+  // Row 18 (center)
+  [16,18,55], [17,18,95], [18,18,110], [19,18,90], [20,18,65],
   // Row 19
-  [18,19,40], [19,19,75], [20,19,100], [21,19,80], [22,19,55],
-  // Row 20 (center)
-  [18,20,55], [19,20,95], [20,20,110], [21,20,90], [22,20,65],
-  // Row 21
-  [18,21,45], [19,21,85], [20,21,95], [21,21,105], [22,21,50],
-  // Row 22 (bottom edge)
-  [19,22,45], [20,22,55], [21,22,50],
+  [16,19,45], [17,19,85], [18,19,95], [19,19,105], [20,19,50],
+  // Row 20 (bottom edge)
+  [17,20,45], [18,20,55], [19,20,50],
 ];
 
 // ── Trajectory (smooth, diagonal path from Earth to Moon and back) ─
@@ -154,48 +158,59 @@ const MOON = [
 // Return:   curves LEFT of diagonal (lower side) back to Earth
 const TRAJECTORY = [
   // ── Earth Slingshot Rot 1──
-  [4, 1],
-  [2, 2],
-  [1, 4],
-  [1, 6],
-  [2, 8],
-  [4, 10],
-  [7, 10],
-  [9, 8],
-  [10, 6],
-  [10, 4],
-  [9, 2],
-  [7, 1],
-  // ── Earth Slingshot Rot 1──
-  [4, 1],
-  [2, 2],
-  [1, 4],
-  [1, 6],
-  [2, 8],
-  [4, 10],
+  [5, 2],
+  [4, 3],
+  [2, 5],
+  [2, 7],
+  [3, 9],
+  [5, 11],
+  [8, 11],
+  [10, 9],
+  [11, 7],
+  [11, 5],
+  [10, 3],
+  [8, 2],
+  // ── Earth Slingshot Rot 2──
+  [5, 2],
+  [4, 3],
+  [2, 5],
+  [2, 7],
+  [3, 9],
+  [5, 11],
   // ── Depart Earth Slingshot ──
-  [9, 12],
-  [14, 14],
-  [19, 16],
+  [7, 12],
+  [10, 14],
+  [13, 15],
   // ── Arrive Moon──
-  [23, 18],
-  [24, 20],
-  [24, 22],
-  [22, 24],
-  [20, 24],
-  [18, 23],
-  [16, 19],
+  [21, 16],
+  [22, 18],
+  [21, 20],
+  [20, 21],
+  [18, 21],
+  [16, 20],
+  [14, 16],
   // ── Depart Moon──
-  [13, 10],
-  [12, 6],
+  [11, 12],
+  [10, 8],
   // ── Arrive back at Earth ──
 ];
 
 // ── Brightness ─────────────────────────────────────────────────────
+// Mirror ArtemisRenderer.java — keep these in sync for faithful testing.
 
 const B_PATH = 50;
 const B_CRAFT_MAX = 255;
 const B_CRAFT_MIN = 140;
+
+// ── Timing ─────────────────────────────────────────────────────────
+// Mirror ArtemisGlyphToyService.java:
+//   STEP_INTERVAL_MS  = 2000 → waypoint advance cadence
+//   FRAME_INTERVAL_MS = 120  → frame push cadence (~8 fps)
+//   pulse cycle       = 1500 ms (ArtemisRenderer.mAnimRunnable)
+
+const STEP_MS = 2000;
+const FRAME_INTERVAL_MS = 120;
+const PULSE_CYCLE_MS = 1500;
 
 // ── State ──────────────────────────────────────────────────────────
 
@@ -203,16 +218,32 @@ let craftIndex = 0;
 let paused = false;
 let speed = 1;
 let lastStep = performance.now();
-const STEP_MS = 1500;
+let lastFrameTime = 0;
 
 // ── Rendering ──────────────────────────────────────────────────────
 
 const canvas = document.getElementById('matrix');
 const ctx = canvas.getContext('2d');
 
+// Hardware disc mask: cell centre must be within ~12.5 of (12,12).
+const DISC_CENTER = 12;
+const DISC_RADIUS_SQ = 12.5 * 12.5;
+function isOnDisc(x, y) {
+  const dx = x - DISC_CENTER, dy = y - DISC_CENTER;
+  return dx * dx + dy * dy <= DISC_RADIUS_SQ;
+}
+
 function renderFrame(timestamp) {
   ctx.fillStyle = '#050505';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // Shade corner cells that are dark on hardware (outside the disc mask)
+  ctx.fillStyle = '#141414';
+  for (let y = 0; y < SIZE; y++) {
+    for (let x = 0; x < SIZE; x++) {
+      if (!isOnDisc(x, y)) ctx.fillRect(x * CELL, y * CELL, CELL, CELL);
+    }
+  }
 
   // Subtle grid
   ctx.strokeStyle = '#0e0e0e';
@@ -222,8 +253,11 @@ function renderFrame(timestamp) {
     ctx.beginPath(); ctx.moveTo(0, i * CELL); ctx.lineTo(SIZE * CELL, i * CELL); ctx.stroke();
   }
 
-  // Helper: draw an LED dot with per-pixel brightness
+  // Helper: draw an LED dot with per-pixel brightness.
+  // Hardware ignores cells outside the disc mask, so suppress them here too —
+  // this surfaces any art/trajectory cell that would be invisible on device.
   function led(x, y, brightness) {
+    if (!isOnDisc(x, y)) return;
     const r = CELL / 2 - 2;
     const cx = x * CELL + CELL / 2;
     const cy = y * CELL + CELL / 2;
@@ -253,7 +287,7 @@ function renderFrame(timestamp) {
   for (const [x, y, b] of MOON) led(x, y, b);
 
   // Trajectory + pulsing spacecraft
-  const pulse = 0.5 + 0.5 * Math.sin((timestamp % 1500) / 1500 * Math.PI * 2);
+  const pulse = 0.5 + 0.5 * Math.sin((timestamp % PULSE_CYCLE_MS) / PULSE_CYCLE_MS * Math.PI * 2);
 
   for (let i = 0; i < TRAJECTORY.length; i++) {
     const [x, y] = TRAJECTORY[i];
@@ -268,8 +302,8 @@ function renderFrame(timestamp) {
   // Simulator-only labels
   ctx.font = '9px monospace';
   ctx.fillStyle = '#282828';
-  ctx.fillText('EARTH', 1.5 * CELL, 10.5 * CELL);
-  ctx.fillText('MOON', 19 * CELL, 24.2 * CELL);
+  ctx.fillText('EARTH', 2 * CELL, 11.5 * CELL);
+  ctx.fillText('MOON', 14 * CELL, 22.2 * CELL);
 }
 
 // ── Animation loop ─────────────────────────────────────────────────
@@ -281,7 +315,12 @@ function loop(timestamp) {
       lastStep = timestamp;
     }
   }
-  renderFrame(timestamp);
+  // Match the service's frame push cadence (FRAME_INTERVAL_MS). The speed
+  // control scales it too so fast-forward stays smooth.
+  if (timestamp - lastFrameTime >= FRAME_INTERVAL_MS / speed) {
+    renderFrame(timestamp);
+    lastFrameTime = timestamp;
+  }
   requestAnimationFrame(loop);
 }
 

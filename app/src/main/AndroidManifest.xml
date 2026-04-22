@@ -9,6 +9,17 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.Material3.DayNight">
 
+        <!-- Activity to redirect to the system Glyph Toys manager -->
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:theme="@android:style/Theme.NoDisplay">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
         <!-- Artemis trajectory Glyph Toy -->
         <service
             android:name=".ArtemisGlyphToyService"
@@ -20,27 +31,27 @@
 
             <!-- Required: toy name shown in the system Glyph Toys manager -->
             <meta-data
-                android:name="toy_name"
+                android:name="com.nothing.glyph.toy.name"
                 android:resource="@string/toy_name" />
 
             <!-- Required: 1:1 preview image (ideally 200x200 px) -->
             <meta-data
-                android:name="toy_preview_image"
+                android:name="com.nothing.glyph.toy.image"
                 android:resource="@drawable/preview_artemis" />
 
             <!-- Optional: short description -->
             <meta-data
-                android:name="toy_summary"
+                android:name="com.nothing.glyph.toy.summary"
                 android:resource="@string/toy_summary" />
 
             <!-- Enable long-press to pause/resume -->
             <meta-data
-                android:name="toy_long_press"
+                android:name="com.nothing.glyph.toy.longpress"
                 android:value="1" />
 
             <!-- Enable Always-On Display support -->
             <meta-data
-                android:name="toy_aod"
+                android:name="com.nothing.glyph.toy.aod_support"
                 android:value="1" />
         </service>
 

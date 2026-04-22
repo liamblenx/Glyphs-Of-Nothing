@@ -1,6 +1,7 @@
 package com.artemis.glyphtoy;
 
 import android.app.Service;
+import android.content.ComponentName;
 import android.content.Intent;
 import android.os.Handler;
 import android.os.IBinder;
@@ -9,9 +10,9 @@ import android.os.Message;
 import android.os.Messenger;
 import android.util.Log;
 
-import com.nothing.sdk.glyph.matrix.GlyphMatrixManager;
-import com.nothing.sdk.glyph.matrix.model.Glyph;
-import com.nothing.sdk.glyph.matrix.model.GlyphToy;
+import com.nothing.ketchum.Glyph;
+import com.nothing.ketchum.GlyphMatrixManager;
+import com.nothing.ketchum.GlyphToy;
 
 /**
  * Glyph Toy service that displays the Artemis mission trajectory.
@@ -51,13 +52,13 @@ public class ArtemisGlyphToyService extends Service {
         mGM = GlyphMatrixManager.getInstance(this);
         mGM.init(new GlyphMatrixManager.Callback() {
             @Override
-            public void onServiceConnected() {
+            public void onServiceConnected(ComponentName name) {
                 mGM.register(Glyph.DEVICE_23112); // Phone (3)
                 Log.i(TAG, "GlyphMatrix service connected");
             }
 
             @Override
-            public void onServiceDisconnected() {
+            public void onServiceDisconnected(ComponentName name) {
                 Log.w(TAG, "GlyphMatrix service disconnected");
             }
         });
@@ -112,11 +113,11 @@ public class ArtemisGlyphToyService extends Service {
                         renderStaticFrame();
                         break;
 
-                    case GlyphToy.ACTION_DOWN:
+                    case GlyphToy.EVENT_ACTION_DOWN:
                         // Could add touch interaction later
                         break;
 
-                    case GlyphToy.ACTION_UP:
+                    case GlyphToy.EVENT_ACTION_UP:
                         break;
                 }
             }
@@ -149,8 +150,8 @@ public class ArtemisGlyphToyService extends Service {
             // Pulse phase: cycles 0..1 over ~1.5 seconds
             float pulsePhase = ((now - mPulseTime) % 1500) / 1500f;
 
-            // Render and push frame
-            int[] frame = ArtemisRenderer.renderFrame(mCraftIndex, pulsePhase);
+            // Render and push frame (scaled to hardware 0–4095 brightness range)
+            int[] frame = ArtemisRenderer.renderHardwareFrame(mCraftIndex, pulsePhase);
             try {
                 mGM.setMatrixFrame(frame);
             } catch (Exception e) {
@@ -174,7 +175,7 @@ public class ArtemisGlyphToyService extends Service {
         int waypointIndex = MissionTracker.isMissionActive()
                 ? MissionTracker.getCurrentWaypoint()
                 : mCraftIndex;
-        int[] frame = ArtemisRenderer.renderFrame(waypointIndex, 0.75f);
+        int[] frame = ArtemisRenderer.renderHardwareFrame(waypointIndex, 0.75f);
         try {
             mGM.setMatrixFrame(frame);
         } catch (Exception e) {
