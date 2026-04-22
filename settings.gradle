@@ -13,5 +13,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "ArtemisGlyphToy"
+rootProject.name = "Glyphs-Of-Nothing"
 include ':app'
